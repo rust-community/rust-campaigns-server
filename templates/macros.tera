@@ -1,0 +1,3 @@
+{% macro render_campaign(campaign) %}
+<div class='rcs-campaign'><h3><a href={{ campaign.click_url | escape }} target='_blank' rel='noopener'>{{ campaign.title | escape }}</a></h3>{% if campaign.description %}<div class='rcs-description'>{{ campaign.description | escape }}</div>{% endif %}</div>
+{% endmacro render_campaign %}

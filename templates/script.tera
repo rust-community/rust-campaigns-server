@@ -1,0 +1,5 @@
+{% import "macros" as macros %}
+
+{% for campaign in campaigns %}
+document.write("{{ macros::render_campaign(campaign=campaign) }}");
+{% endfor %}
