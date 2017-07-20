@@ -1,0 +1,19 @@
+[package]
+name = "rust-campaigns-server"
+version = "0.1.0"
+authors = ["Sebastián Magrí <sebasmagri@gmail.com>"]
+
+[dependencies]
+chrono = { version = "^0.4", features = ["serde"] }
+diesel = { version = "^0.14", features = ["postgres", "chrono"] }
+diesel_codegen = { version = "^0.14", features = ["postgres"] }
+dotenv = "^0.10"
+rand = "^0.3"
+rocket = "^0.3"
+rocket_codegen = "^0.3"
+rocket_contrib = { version = "^0.3", default_features = false, features = ["json"] }
+r2d2 = "0.7.0"
+r2d2-diesel = "^0.14"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_json = "^1.0"
