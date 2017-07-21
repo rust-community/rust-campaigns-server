@@ -6,8 +6,6 @@ extern crate chrono;
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
 
-extern crate dotenv;
-
 extern crate rand;
 
 extern crate rocket;
@@ -29,29 +27,19 @@ use r2d2_diesel::{ConnectionManager};
 
 use std::env;
 
-
-
-mod database {
+pub mod database {
     use super::{Pool,ConnectionManager,PgConnection};
 
     pub type DBConnection = PgConnection;
     pub type DBPool = Pool<ConnectionManager<DBConnection>>;
 }
 
-
-mod schema {
+pub mod schema {
     infer_schema!("dotenv:DATABASE_URL");
 }
 
-
-mod models {
-    use super::chrono::NaiveDateTime;
-    use super::database::DBConnection;
-    use super::diesel::prelude::*;
-    use super::diesel::expression::dsl::now;
-    use super::rand::{thread_rng,Rng};
-    use super::schema::campaigns::dsl::{campaigns,start_date as start};
-    use super::serde_json::Value;
+pub mod api {
+    use serde_json::Value;
 
     #[derive(Serialize)]
     pub struct APIRoot<'a> {
@@ -69,6 +57,11 @@ mod models {
             }
         }
     }
+}
+
+pub mod models {
+    use super::chrono::NaiveDateTime;
+    use super::schema::campaigns;
 
     #[derive(Clone, Deserialize, Queryable, Serialize)]
     pub struct Campaign {
@@ -80,7 +73,28 @@ mod models {
         click_url: String
     }
 
-    impl Campaign {
+    #[derive(Insertable)]
+    #[table_name="campaigns"]
+    pub struct NewCampaign {
+        title: String,
+        description: Option<String>,
+        start_date: NaiveDateTime,
+        end_date: Option<NaiveDateTime>,
+        click_url: String,
+    }
+}
+
+pub mod queries {
+    use super::database::DBConnection;
+    use super::models::Campaign;
+    use super::diesel::prelude::*;
+    use super::diesel::expression::dsl::now;
+    use super::rand::{thread_rng,Rng};
+    use super::schema::campaigns::dsl::{campaigns,start_date as start};
+
+    pub struct CampaignQueries;
+
+    impl CampaignQueries {
         // returns a vector of `limit` random active campaigns
         pub fn random_set(conn: &DBConnection, limit: usize) -> Vec<Campaign> {
             let active_campaigns_qry = campaigns
@@ -112,10 +126,12 @@ mod models {
 }
 
 
-mod handlers {
+pub mod handlers {
 
     use super::database::DBPool;
-    use super::models::{APIRoot,Campaign};
+    use super::api::APIRoot;
+    use super::models::Campaign;
+    use super::queries::CampaignQueries;
     use super::rocket::State;
     use super::rocket_contrib::{Json,Template};
 
@@ -139,13 +155,13 @@ mod handlers {
     #[get("/campaigns")]
     fn get_campaigns(pool: State<DBPool>) -> Json<Vec<Campaign>> {
         let ref conn = *pool.clone().get().unwrap();
-        Json(Campaign::random_set(&conn, DEFAULT_LIMIT))
+        Json(CampaignQueries::random_set(&conn, DEFAULT_LIMIT))
     }
 
     #[get("/campaigns?<pars>", rank = 2)]
     fn get_campaigns_with_pars(pool: State<DBPool>, pars: CampaignsParams) -> Json<Vec<Campaign>> {
         let ref conn = *pool.clone().get().unwrap();
-        Json(Campaign::random_set(&conn, get_limit(pars)))
+        Json(CampaignQueries::random_set(&conn, get_limit(pars)))
     }
 
     #[get("/")]
@@ -158,7 +174,7 @@ mod handlers {
         let ref conn = *pool.clone().get().unwrap();
 
         let context = json!({
-            "campaigns": Campaign::random_set(conn, DEFAULT_LIMIT)
+            "campaigns": CampaignQueries::random_set(conn, DEFAULT_LIMIT)
         });
         Template::render("script", &context)
     }
@@ -168,14 +184,14 @@ mod handlers {
         let ref conn = *pool.clone().get().unwrap();
 
         let context = json!({
-            "campaigns": Campaign::random_set(conn, get_limit(pars))
+            "campaigns": CampaignQueries::random_set(conn, get_limit(pars))
         });
         Template::render("script", &context)
     }
 }
 
 
-fn init_pool() -> database::DBPool {
+pub fn init_pool() -> database::DBPool {
     let url = env::var("DATABASE_URL")
         .expect("DATABASE_URL environment variable must be set");
 
@@ -185,20 +201,4 @@ fn init_pool() -> database::DBPool {
 
     Pool::new(config, manager)
         .expect("Could not create database connection pool")    
-}
-
-fn main() {
-    dotenv().unwrap();
-
-    let pool: database::DBPool = init_pool();
-
-    rocket::ignite()
-        .manage(pool)
-        .attach(rocket_contrib::Template::fairing())
-        .mount("/api/v1/", routes![handlers::api_root,
-                                   handlers::get_campaigns,
-                                   handlers::get_campaigns_with_pars])
-        .mount("", routes![handlers::campaigns_script,
-                           handlers::campaigns_script_with_pars])
-        .launch();
 }
