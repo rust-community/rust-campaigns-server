@@ -6,8 +6,6 @@ extern crate chrono;
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
 
-extern crate dotenv;
-
 extern crate rand;
 
 extern crate rocket;
@@ -29,21 +27,18 @@ use r2d2_diesel::{ConnectionManager};
 
 use std::env;
 
-
-
-mod database {
+pub mod database {
     use super::{Pool,ConnectionManager,PgConnection};
 
     pub type DBConnection = PgConnection;
     pub type DBPool = Pool<ConnectionManager<DBConnection>>;
 }
 
-
-mod schema {
+pub mod schema {
     infer_schema!("dotenv:DATABASE_URL");
 }
 
-mod api {
+pub mod api {
     use serde_json::Value;
 
     #[derive(Serialize)]
@@ -64,7 +59,7 @@ mod api {
     }
 }
 
-mod models {
+pub mod models {
     use super::chrono::NaiveDateTime;
     use super::schema::campaigns;
 
@@ -89,7 +84,7 @@ mod models {
     }
 }
 
-mod queries {
+pub mod queries {
     use super::database::DBConnection;
     use super::models::Campaign;
     use super::diesel::prelude::*;
@@ -131,7 +126,7 @@ mod queries {
 }
 
 
-mod handlers {
+pub mod handlers {
 
     use super::database::DBPool;
     use super::api::APIRoot;
@@ -196,7 +191,7 @@ mod handlers {
 }
 
 
-fn init_pool() -> database::DBPool {
+pub fn init_pool() -> database::DBPool {
     let url = env::var("DATABASE_URL")
         .expect("DATABASE_URL environment variable must be set");
 
@@ -206,20 +201,4 @@ fn init_pool() -> database::DBPool {
 
     Pool::new(config, manager)
         .expect("Could not create database connection pool")    
-}
-
-fn main() {
-    dotenv().unwrap();
-
-    let pool: database::DBPool = init_pool();
-
-    rocket::ignite()
-        .manage(pool)
-        .attach(rocket_contrib::Template::fairing())
-        .mount("/api/v1/", routes![handlers::api_root,
-                                   handlers::get_campaigns,
-                                   handlers::get_campaigns_with_pars])
-        .mount("", routes![handlers::campaigns_script,
-                           handlers::campaigns_script_with_pars])
-        .launch();
 }
