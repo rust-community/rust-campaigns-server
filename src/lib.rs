@@ -20,8 +20,6 @@ extern crate serde;
 
 use diesel::pg::PgConnection;
 
-use dotenv::dotenv;
-
 use r2d2::{Config,Pool};
 use r2d2_diesel::{ConnectionManager};
 
