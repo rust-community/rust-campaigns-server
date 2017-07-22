@@ -20,8 +20,6 @@ extern crate serde;
 
 use diesel::pg::PgConnection;
 
-use dotenv::dotenv;
-
 use r2d2::{Config,Pool};
 use r2d2_diesel::{ConnectionManager};
 
@@ -76,11 +74,11 @@ pub mod models {
     #[derive(Insertable)]
     #[table_name="campaigns"]
     pub struct NewCampaign {
-        title: String,
-        description: Option<String>,
-        start_date: NaiveDateTime,
-        end_date: Option<NaiveDateTime>,
-        click_url: String,
+        pub title: String,
+        pub description: Option<String>,
+        pub start_date: NaiveDateTime,
+        pub end_date: Option<NaiveDateTime>,
+        pub click_url: String,
     }
 }
 
