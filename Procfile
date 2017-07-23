@@ -1,1 +1,1 @@
-web: ROCKET_ADDRESS=0.0.0.0 ROCKET_PORT=$PORT target/release/server
+web: RUST_BACKTRACE=1 ROCKET_ADDRESS=0.0.0.0 ROCKET_PORT=$PORT target/release/server
