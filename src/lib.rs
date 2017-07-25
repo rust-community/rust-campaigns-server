@@ -20,8 +20,6 @@ extern crate serde;
 
 use diesel::pg::PgConnection;
 
-use dotenv::dotenv;
-
 use r2d2::{Config,Pool};
 use r2d2_diesel::{ConnectionManager};
 
@@ -68,28 +66,52 @@ pub mod api {
     }
 }
 
+/// Data access structs
+pub mod das {
+    use super::models::Campaign;
+
+    #[derive(Serialize, Deserialize)]
+    pub struct DisplayCampaign {
+        id: i64,
+        title: String,
+        description: Option<String>,
+        click_url: String,
+    }
+
+    impl From<Campaign> for DisplayCampaign {
+        fn from(target: Campaign) -> DisplayCampaign {
+            DisplayCampaign {
+                id: target.id,
+                title: target.title,
+                description: target.description,
+                click_url: target.click_url
+            }
+        }
+    }
+}
+
 pub mod models {
     use super::chrono::NaiveDateTime;
     use super::schema::campaigns;
 
-    #[derive(Clone, Deserialize, Queryable, Serialize)]
+    #[derive(Clone, Queryable)]
     pub struct Campaign {
-        id: i64,
-        title: String,
-        description: Option<String>,
-        start_date: NaiveDateTime,
-        end_date: Option<NaiveDateTime>,
-        click_url: String
+        pub(crate) id: i64,
+        pub(crate) title: String,
+        pub(crate) description: Option<String>,
+        pub(crate) start_date: NaiveDateTime,
+        pub(crate) end_date: Option<NaiveDateTime>,
+        pub(crate) click_url: String
     }
 
     #[derive(Insertable)]
     #[table_name="campaigns"]
     pub struct NewCampaign {
-        title: String,
-        description: Option<String>,
-        start_date: NaiveDateTime,
-        end_date: Option<NaiveDateTime>,
-        click_url: String,
+        pub title: String,
+        pub description: Option<String>,
+        pub start_date: NaiveDateTime,
+        pub end_date: Option<NaiveDateTime>,
+        pub click_url: String,
     }
 }
 
@@ -136,10 +158,9 @@ pub mod queries {
 
 
 pub mod handlers {
-
     use super::database::DBPool;
     use super::api::APIRoot;
-    use super::models::Campaign;
+    use super::das::DisplayCampaign;
     use super::queries::CampaignQueries;
     use super::rocket::State;
     use super::rocket_contrib::{Json,Template};
@@ -162,15 +183,15 @@ pub mod handlers {
     }
 
     #[get("/campaigns")]
-    fn get_campaigns(pool: State<DBPool>) -> Json<Vec<Campaign>> {
+    fn get_campaigns(pool: State<DBPool>) -> Json<Vec<DisplayCampaign>> {
         let ref conn = *pool.clone().get().unwrap();
-        Json(CampaignQueries::random_set(&conn, DEFAULT_LIMIT))
+        Json(CampaignQueries::random_set(&conn, DEFAULT_LIMIT).into_iter().map(DisplayCampaign::from).collect())
     }
 
     #[get("/campaigns?<pars>", rank = 2)]
-    fn get_campaigns_with_pars(pool: State<DBPool>, pars: CampaignsParams) -> Json<Vec<Campaign>> {
+    fn get_campaigns_with_pars(pool: State<DBPool>, pars: CampaignsParams) -> Json<Vec<DisplayCampaign>> {
         let ref conn = *pool.clone().get().unwrap();
-        Json(CampaignQueries::random_set(&conn, get_limit(pars)))
+        Json(CampaignQueries::random_set(&conn, get_limit(pars)).into_iter().map(DisplayCampaign::from).collect())
     }
 
     #[get("/")]
@@ -183,7 +204,7 @@ pub mod handlers {
         let ref conn = *pool.clone().get().unwrap();
 
         let context = json!({
-            "campaigns": CampaignQueries::random_set(conn, DEFAULT_LIMIT)
+            "campaigns": CampaignQueries::random_set(conn, DEFAULT_LIMIT).into_iter().map(DisplayCampaign::from).collect::<Vec<_>>()
         });
         Template::render("script", &context)
     }
@@ -193,7 +214,7 @@ pub mod handlers {
         let ref conn = *pool.clone().get().unwrap();
 
         let context = json!({
-            "campaigns": CampaignQueries::random_set(conn, get_limit(pars))
+            "campaigns": CampaignQueries::random_set(conn, get_limit(pars)).into_iter().map(DisplayCampaign::from).collect::<Vec<_>>()
         });
         Template::render("script", &context)
     }
