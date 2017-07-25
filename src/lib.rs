@@ -35,7 +35,16 @@ pub mod database {
 }
 
 pub mod schema {
-    infer_schema!("dotenv:DATABASE_URL");
+    table! {
+        campaigns (id) {
+            id -> Int8,
+            title -> Varchar,
+            description -> Nullable<Varchar>,
+            start_date -> Timestamp,
+            end_date -> Nullable<Timestamp>,
+            click_url -> Varchar,
+        }
+    }
 }
 
 pub mod api {
