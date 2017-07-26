@@ -1,0 +1,27 @@
+{
+  "name": "Rust Community Ad Server",
+  "description": "A server serving banner ads for the Rust community",
+  "repository": "https://github.com/rust-community/rust-campaigns-server",
+  "logo": "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+  "keywords": ["rust", "ads"],
+  "env": {
+    "RUST_BACKTRACE": {
+      "description": "Setting this value to 1 will activate display of backtraces",
+      "value": "1"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "https://github.com/emk/heroku-buildpack-rust.git"
+    },
+    {
+      "url": "https://github.com/sgrif/heroku-buildpack-diesel.git"
+    }
+  ],
+  "addons": [
+      "heroku-postgresql"
+  ],
+  "scripts": {
+    "postdeploy": "bin/diesel setup"
+  }
+}

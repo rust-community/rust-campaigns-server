@@ -60,3 +60,7 @@ var rcsClient = new RCSClient();
 var rustCampaigns = rcsClient.load(5);
 ...
 ```
+
+### Deploy your own instance on Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)

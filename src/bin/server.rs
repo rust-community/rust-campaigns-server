@@ -12,7 +12,7 @@ use rust_campaigns_server::{handlers,database};
 use rust_campaigns_server::init_pool;
 
 fn main() {
-    dotenv().unwrap();
+    dotenv().ok();
 
     let pool: database::DBPool = init_pool();
 
